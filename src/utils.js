@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const mkdirp = require('mkdirp');
+const fs = require('fs');
 const path = require('path');
 
 module.exports.hash = function (buf) {
@@ -7,6 +9,14 @@ module.exports.hash = function (buf) {
   }
 
   return crypto.createHash('md5').update(buf).digest('hex').substr(0, 20);
+};
+
+module.exports.hashFile = function (filepath) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filepath, (err, data) => {
+      err ? reject(err) : resolve(this.hash(data));
+    });
+  });
 };
 
 module.exports.isLocalFile = function (filepath) {
@@ -28,6 +38,49 @@ module.exports.escapeRegExp = function (string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 };
 
+module.exports.copyAsset = function(src, assetsPath) {
+  return new Promise((resolve, reject) => {
+    mkdirp(path.dirname(assetsPath), (err) => {
+      if (err) {
+        return reject(err);
+      }
+
+      const subdir = this.getAssetCategory(assetsPath);
+      let relativePath;
+      this.hashFile(src)
+        .then(hash => this.getHashFilename(src, hash))
+        .then(filename => {
+          relativePath = path.join(subdir, filename);
+          return path.join(assetsPath, relativePath)
+        })
+        .then(dest => {
+          const readStream = fs.createReadStream(src);
+
+          readStream.once('error', (err) => {
+            reject(err);
+          });
+
+          readStream.once('end', () => {
+            resolve(relativePath);
+          });
+
+          readStream.pipe(fs.createWriteStream(dest));
+        });
+    });
+  });
+};
+
+module.exports.copyAssetSync = function(src, assetsPath, srcBuffer) {
+  const buffer = srcBuffer || fs.readFileSync(src);
+  const hash = this.hash(buffer);
+  const filename = this.getHashFilename(src, hash);
+  const subdir = this.getAssetCategory(src);
+  const relativePath = path.join(subdir, filename);
+  mkdirp.sync(path.join(assetsPath, subdir));
+  fs.writeFileSync(path.join(assetsPath, relativePath), buffer);
+  return relativePath;
+};
+
 module.exports.getAssetCategory = function (assetPath) {
   assetPath = assetPath.toLowerCase();
 
@@ -43,7 +96,7 @@ module.exports.getAssetCategory = function (assetPath) {
     return 'fonts'
   }
 
-  if (/\.(png|svg|jpg|jpeg)$/) {
+  if (/\.(png|svg|jpe?g|ico)$/) {
     return 'img'
   }
 

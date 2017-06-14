@@ -6,7 +6,8 @@ const path = require('path');
 it('real', function (done) {
 
   let pipe = gulp.src(path.join(__dirname, 'views/view.ejs')).pipe(viewComplete({
-    version: '0.0.1'
+    publicPath: '/',
+    assetsPath: path.join(process.cwd(), 'dist'),
   })).pipe(gulp.dest('dist/views'));
   let resultFile;
 

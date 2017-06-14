@@ -6,7 +6,7 @@ const url = require('url');
 const Utils = require('./utils');
 
 function revCss(content, options) {
-  const { dir, dest, publicPath } = options;
+  const { cssDir, assetsPath, publicPath } = options;
   const reg = /url\((.*?)\)/g;
   const manifest = {};
   return content.replace(reg, (match, p1, str) => {
@@ -17,7 +17,7 @@ function revCss(content, options) {
 
     const urlParts = rawUrl.split('?');
     const relativePath = urlParts.shift();
-    const assetPath = path.join(dir, relativePath);
+    const assetPath = path.join(cssDir, relativePath);
     if (!fs.existsSync(assetPath)) {
       return match;
     }
@@ -33,7 +33,7 @@ function revCss(content, options) {
     const hash = Utils.hash(assetBuffer);
     const outFilename = `${baseName}-${hash}${ext}`;
     let assetUrl = url.resolve(publicPath || '/', `${subDir}/${outFilename}`);
-    const assetDir = path.resolve(dest, subDir);
+    const assetDir = path.resolve(assetsPath, subDir);
 
     // copy
     mkdirp.sync(assetDir);

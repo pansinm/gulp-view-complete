@@ -1,12 +1,14 @@
 {
   "name": "gulp-view-complete",
   "version": "0.1.0",
-  "description": "view complete",
+  "description": "gulp plugin for collect html like template resource",
   "main": "index.js",
   "dependencies": {
     "file-loader": "^0.11.2",
     "gulp-util": "^3.0.8",
+    "less": "^2.7.2",
     "mkdirp": "^0.5.1",
+    "node-sass": "^4.5.3",
     "through2": "^2.0.3",
     "uuid": "^3.0.1",
     "webpack": "^2.6.1"

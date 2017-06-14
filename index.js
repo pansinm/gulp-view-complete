@@ -5,81 +5,28 @@ const uuid = require('uuid');
 const mkdirp = require('mkdirp');
 const fs = require('fs');
 const url = require('url');
-const Utils = require('./src/utils');
-const revCss = require("./src/revCss");
 const webpack = require('webpack');
+const Utils = require('./src/utils');
+const { processCss, processLess, processScss, processJs, preprocess, processAsset } = require('./src/processor');
 
 const PluginError = gutil.PluginError;
 const PLUGIN_NAME = 'gulp-view-complete';
 
-function remarkContent(content) {
-  const reg = /(src|href)=(['"])((?:(?!\2).)*)\2/g;
-  const remarkMap = {};
-  const remarkedContent = content.replace(reg, (match, p1, p2, p3, str) => {
-    let remarkId = remarkMap[p3];
-    if (!remarkId) {
-      remarkId = uuid.v4();
-      remarkMap[p3] = remarkId;
-    }
-    return `${p1}=${p2}${remarkId}${p2}`;
-  });
-
-  return {
-    content: remarkedContent,
-    remarkMap
-  };
-}
-
-function webpackJs(filepath) {
-  let entry = path.relative(process.cwd(), filepath).replace(/\\/g, '/');
-  if (!entry.startsWith('.')) {
-    entry = './' + entry;
+function complete(filepath, options) {
+  const ext = path.extname(filepath).toLowerCase();
+  if (/\.(png|jpe?g|svg|ico)$/.test(ext)) {
+    return processAsset(filepath, options);
   }
 
-  return new Promise((resolve, reject) => {
-    webpack({
-      entry,
-      output: {
-        path: path.join(process.cwd(), 'dist'),
-        filename: `js/${path.basename(filepath, '.js')}-[chunkHash].js`
-      },
-      module: {
-        loaders: [{
-          test: /\.(png|less|scss)$/,
-          loader: 'file-loader?name=[name]-[hash:20].[ext]&outputPath=img/'
-        }]
-      }
-    }, (err, stats) => {
-      fs.writeFileSync('a.js', require('util').inspect(stats.compilation.entrypoints, {depth: 5}));
-      err ? reject(err) : resolve(stats.compilation.entrypoints.main.chunks[0].files[0]);
-    });
-  });
-}
-
-function processCss(filepath) {
-  const dir = path.dirname(filepath);
-  const dest = 'dist';
-  const publicPath = '/';
-  const content = fs.readFileSync(filepath, 'utf8');
-  const finalContent = revCss(content, { dir, dest });
-  const finalBuffer = new Buffer(finalContent, 'utf8');
-  const subdir = Utils.getAssetCategory(filepath);
-  const hash = Utils.hash(finalBuffer);
-  const destPath = path.join(dest, subdir);
-  mkdirp.sync(destPath);
-  const finalFilename = Utils.getHashFilename(filepath, hash);
-  fs.writeFileSync(path.resolve(destPath, finalFilename), finalBuffer);
-  const finalUrl = url.resolve(publicPath, `${subdir}/${finalFilename}`);
-  return Promise.resolve(finalUrl);
-}
-
-function complete(filepath) {
-  const ext = path.extname(filepath).toLowerCase();
   switch (ext) {
     case '.js':
-      return webpackJs(filepath);
+      return processJs(filepath, options);
     case '.css':
-      return processCss(filepath);
+      return processCss(filepath, options);
+    case '.less':
+      return processLess(filepath, options);
+    case '.scss':
+      return processScss(filepath, options);
     default:
       return Promise.resolve();
   }
@@ -87,6 +34,9 @@ function complete(filepath) {
 
 // 插件级别函数 (处理文件)
 function viewComplete(options) {
+  options.publicPath = options.publicPath || '/';
+  options.assetsPath = options.assetsPath || path.resolve(process.cwd(), 'dist');
+  const { publicPath } = options;
 
   // 创建一个让每个文件通过的 stream 通道
   return through.obj(function (file, enc, cb) {
@@ -101,7 +51,7 @@ function viewComplete(options) {
 
     if (file.isBuffer()) {
       const input = file.contents.toString();
-      const remarkObj = remarkContent(input);
+      const remarkObj = preprocess(input);
       content = remarkObj.content;
       remarkMap = remarkObj.remarkMap;
     }
@@ -110,12 +60,13 @@ function viewComplete(options) {
       const filepath = path.join(path.dirname(file.path), ref);
 
       return promise
-        .then(() => complete(filepath))
-        .then((finalUrl) => {
+        .then(() => complete(filepath, options))
+        .then((assetPath) => {
+          const finalUrl = assetPath ? url.resolve(publicPath, assetPath) : ref;
           const remarkId = remarkMap[ref];
           const reg = new RegExp(`${Utils.escapeRegExp(remarkId)}`, 'g');
-          content = content.replace(reg, finalUrl || ref);
-        });
+          content = content.replace(reg, finalUrl);
+        })
     }, Promise.resolve());
 
     done.then(() => {
@@ -123,7 +74,11 @@ function viewComplete(options) {
         file.contents = new Buffer(content);
       }
       cb(null, file);
-    });
+    })
+      .catch(err => {
+        console.error(err);
+        cb(null, file);
+      });
   });
 }
 
