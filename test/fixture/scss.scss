@@ -1,4 +1,4 @@
-$color: #fff;
+@import "varibles";
 body {
-  color: $color;
+  color: $backgroundColor;
 }

@@ -1,6 +1,6 @@
 {
   "name": "gulp-view-complete",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "gulp plugin for collect html like template resource",
   "main": "index.js",
   "dependencies": {
@@ -14,7 +14,9 @@
   "devDependencies": {
     "chai": "^4.0.2",
     "gulp": "^3.9.1",
-    "mocha": "^3.4.2"
+    "less": "^2.7.2",
+    "mocha": "^3.4.2",
+    "node-sass": "^4.5.3"
   },
   "scripts": {
     "test": "mocha test"

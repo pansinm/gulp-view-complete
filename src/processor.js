@@ -16,16 +16,15 @@ module.exports.processCss = function (filepath, options) {
 
 module.exports.processLess = function (filepath, options) {
   const less = require('less');
-  if (!less) {
-    console.error('请先安装 less \n npm install -D less');
-    process.exit(1);
-  }
   const { assetsPath, publicPath } = options;
   const input = fs.readFileSync(filepath, 'utf8');
-  return less.render(input)
+  const dirname = path.dirname(filepath);
+  return less.render(input, {
+    paths: [dirname]
+  })
     .then((output) => {
       const cssContent = revCss(output.css, {
-        cssDir: path.dirname(filepath),
+        cssDir: dirname,
         publicPath,
         assetsPath
       });
@@ -36,16 +35,15 @@ module.exports.processLess = function (filepath, options) {
 
 module.exports.processScss = function (filepath, options) {
   const sass = require('node-sass');
-  if (!sass) {
-    console.error('请先安装 node-sass \n npm install -D node-sass');
-    process.exit(1);
-  }
   const { assetsPath, publicPath } = options;
+  const dirname = path.dirname(filepath);
   const result = sass.renderSync({
-    file: filepath
+    file: filepath,
+    includePaths: [dirname]
   });
+
   const cssContent = revCss(result.css.toString(), {
-    cssDir: path.dirname(filepath),
+    cssDir: dirname,
     publicPath,
     assetsPath
   });
