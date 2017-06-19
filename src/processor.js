@@ -1,7 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const less = require('less');
-const sass = require('node-sass');
 const webpack = require('webpack');
 const uuid = require('uuid');
 const revCss = require('./revCss');
@@ -17,6 +15,11 @@ module.exports.processCss = function (filepath, options) {
 };
 
 module.exports.processLess = function (filepath, options) {
+  const less = require('less');
+  if (!less) {
+    console.error('请先安装 less \n npm install -D less');
+    process.exit(1);
+  }
   const { assetsPath, publicPath } = options;
   const input = fs.readFileSync(filepath, 'utf8');
   return less.render(input)
@@ -32,6 +35,11 @@ module.exports.processLess = function (filepath, options) {
 };
 
 module.exports.processScss = function (filepath, options) {
+  const sass = require('node-sass');
+  if (!sass) {
+    console.error('请先安装 node-sass \n npm install -D node-sass');
+    process.exit(1);
+  }
   const { assetsPath, publicPath } = options;
   const result = sass.renderSync({
     file: filepath
