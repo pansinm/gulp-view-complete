@@ -8,6 +8,10 @@ it('real', function (done) {
   let pipe = gulp.src(path.join(__dirname, 'views/view.ejs')).pipe(viewComplete({
     publicPath: '/',
     assetsPath: path.join(process.cwd(), 'dist'),
+    loaders: [{
+      test: /\.ejs$/,
+      loader: 'ejs-compiled-loader'
+    }]
   })).pipe(gulp.dest('dist/views'));
   let resultFile;
 

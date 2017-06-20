@@ -57,7 +57,7 @@ module.exports.processAsset = function (filepath, options) {
 };
 
 module.exports.processJs = function (filepath, options) {
-  const { publicPath, assetsPath } = options;
+  const { publicPath, assetsPath, loaders = [] } = options;
   let entry = path.relative(process.cwd(), filepath).replace(/\\/g, '/');
   if (!entry.startsWith('.')) {
     entry = './' + entry;
@@ -75,7 +75,7 @@ module.exports.processJs = function (filepath, options) {
         loaders: [{
           test: /\.(png|jpe?g|svg|ico)$/,
           loader: 'file-loader?name=[name]-[hash:20].[ext]&outputPath=img/'
-        }]
+        }].concat(loaders)
       }
     }, (err, stats) => {
       err ? reject(err) : resolve(stats.compilation.entrypoints.main.chunks[0].files[0]);
