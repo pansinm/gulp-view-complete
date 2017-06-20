@@ -1,6 +1,6 @@
 {
   "name": "gulp-view-complete",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "gulp plugin for collect html like template resource",
   "main": "index.js",
   "dependencies": {

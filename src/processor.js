@@ -87,6 +87,10 @@ module.exports.preprocess = function (content) {
   const reg = /(src|href)=(['"])((?:(?!\2).)*)\2/g;
   const remarkMap = {};
   const remarkedContent = content.replace(reg, (match, p1, p2, p3, str) => {
+    if (!Utils.isLocalFile(p3)) {
+      return match;
+    }
+
     let remarkId = remarkMap[p3];
     if (!remarkId) {
       remarkId = uuid.v4();

@@ -13,6 +13,10 @@ const PluginError = gutil.PluginError;
 const PLUGIN_NAME = 'gulp-view-complete';
 
 function complete(filepath, options) {
+  if (!fs.existsSync(filepath)) {
+    return Promise.resolve();
+  }
+
   const ext = path.extname(filepath).toLowerCase();
   if (/\.(png|jpe?g|svg|ico)$/.test(ext)) {
     return processAsset(filepath, options);
